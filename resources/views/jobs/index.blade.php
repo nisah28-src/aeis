@@ -64,6 +64,8 @@
                     @foreach($jobs as $id => $job)
                         @php
                             $postedAt = $job['posted_at'] ?? now()->subDays(90)->toDateString();
+                            $jobType = $job['type'] ?? 'Full-time';
+                            $jobMode = $job['mode'] ?? 'Hybrid';
                             $daysAgo = max(0, (int) now()->parse($postedAt)->diffInDays(now()));
                             $isNew = $daysAgo <= 30;
                             $ageLabel = $daysAgo === 0
@@ -88,8 +90,8 @@
                             </div>
                             <p class="mt-4 text-sm leading-6 text-slate-600">{{ $job['description'] }}</p>
                             <div class="mt-5 flex flex-wrap gap-2 text-sm">
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{{ $job['type'] }}</span>
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{{ $job['mode'] }}</span>
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{{ $jobType }}</span>
+                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">{{ $jobMode }}</span>
                             </div>
                             <div class="mt-6 flex items-center justify-between">
                                 <p class="text-sm text-slate-500">{{ $ageLabel }}</p>

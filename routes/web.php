@@ -68,6 +68,43 @@ $fakeCandidates = [
     ],
 ];
 
+/*
+|--------------------------------------------------------------------------
+| Roles available for the Resume Health Check — same 5 roles used
+| throughout this project, so the AI's reasoning is already proven
+| against each one.
+*/
+$resumeCheckRoles = [
+    'support' => [
+        'title' => 'Customer Support Executive',
+        'description' => 'Handles inbound customer complaints, resolves service issues, '
+            . 'escalates when needed, uses a CRM system, and requires clear '
+            . 'communication and calm problem-solving under pressure.',
+    ],
+    'swe' => [
+        'title' => 'Junior Software Engineer',
+        'description' => 'Builds and maintains web applications, works with databases, '
+            . 'collaborates with a team using Git, and applies foundational software '
+            . 'engineering and system design knowledge.',
+    ],
+    'sales' => [
+        'title' => 'Sales Executive',
+        'description' => 'Generates leads, negotiates deals, meets revenue targets, '
+            . 'builds client relationships, and requires strong persuasion and '
+            . 'communication skills.',
+    ],
+    'marketing' => [
+        'title' => 'Marketing Executive',
+        'description' => 'Plans and executes campaigns, manages social media and content, '
+            . 'analyzes engagement metrics, and requires creativity and audience understanding.',
+    ],
+    'warehouse' => [
+        'title' => 'Warehouse Operations Assistant',
+        'description' => 'Handles inventory, operates equipment like forklifts, ensures '
+            . 'safety compliance, and requires physical stamina and attention to detail.',
+    ],
+];
+
 Route::get('/', function () use ($fakeJobs) {
     return view('welcome', ['jobs' => $fakeJobs]);
 });
@@ -80,8 +117,8 @@ Route::get('/jobs', function (Request $request) use ($fakeJobs) {
     $filteredJobs = [];
 
     foreach ($fakeJobs as $id => $job) {
-        $matchesSearch = $search === ''
-            || str_contains(strtolower($job['title'] . ' ' . $job['department'] . ' ' . $job['description']), strtolower($search));
+        $jobText = strtolower($job['title'] . ' ' . $job['department'] . ' ' . $job['description']);
+        $matchesSearch = $search === '' || str_contains($jobText, strtolower($search));
         $matchesType = $type === '' || strtolower($job['type']) === strtolower($type);
         $matchesMode = $mode === '' || strtolower($job['mode']) === strtolower($mode);
 
@@ -142,7 +179,7 @@ Route::post('/jobs/{id}/apply', function (Request $request, $id) use ($fakeJobs)
             ]);
     } catch (\Illuminate\Http\Client\ConnectionException $e) {
         return back()->withErrors([
-            'resume' => 'Could not reach the AI service. Is the Flask app running on port 5000?',
+            'resume' => 'Could not reach the AI service. Is the Flask app running on port 5050?',
         ]);
     }
 
@@ -165,3 +202,51 @@ Route::get('/candidates/{id}', function ($id) use ($fakeCandidates) {
         'evaluation' => $data['evaluation'],
     ]);
 })->name('candidates.show');
+
+/*
+|--------------------------------------------------------------------------
+| RESUME HEALTH CHECK — candidate-facing, no job application required
+|--------------------------------------------------------------------------
+| Reuses the exact same /api/evaluate Flask endpoint as job applications.
+| No new AI logic here — only the display language changes, from
+| HR-facing ("this candidate...") to candidate-facing ("your resume...").
+*/
+Route::get('/resume-check', function () {
+    return view('resume-check.show');
+})->name('resume-check.show');
+
+Route::post('/resume-check', function (Request $request) use ($resumeCheckRoles) {
+    set_time_limit(45);
+
+    $request->validate([
+        'target_role' => 'required|string',
+        'resume' => 'required|file|mimes:pdf|max:5120',
+    ]);
+
+    $roleKey = $request->input('target_role');
+    abort_if(!isset($resumeCheckRoles[$roleKey]), 400);
+    $role = $resumeCheckRoles[$roleKey];
+
+    $file = $request->file('resume');
+
+    try {
+        $response = Http::connectTimeout(10)->timeout(40)
+            ->attach('resume', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+            ->post('http://127.0.0.1:5050/api/evaluate', [
+                'role_description' => $role['description'],
+            ]);
+    } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        return back()->withErrors([
+            'resume' => 'Could not reach the AI service. Is the Flask app running on port 5050?',
+        ]);
+    }
+
+    if ($response->failed()) {
+        return back()->withErrors(['resume' => 'The AI service returned an error. Please try again.']);
+    }
+
+    return view('resume-check.result', [
+        'target_role_title' => $role['title'],
+        'result' => $response->json(),
+    ]);
+})->name('resume-check.submit');
