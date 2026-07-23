@@ -161,6 +161,43 @@ def generate_snapshot(resume_text: str, role_description: str) -> dict:
         return {"error": "Could not parse response", "raw": raw_text}
 
 
+GENERAL_ASSESSMENT_PROMPT = """You help someone understand their own resume from a career perspective — no specific job is being targeted. Given only a resume, identify four things.
+
+Be strict about grounding every claim in something actually written in the resume. Never invent skills, traits, or experience that isn't there. If the resume is thin, say so plainly rather than padding it with generic encouragement.
+
+Produce exactly four things:
+1. skills: a list of 3-6 concrete, functional skills genuinely evidenced by the resume text (e.g. "CRM tools", "Python", "complaint escalation") — not aspirational, only what's actually shown.
+2. traits: a list of 2-4 soft-skill or behavioral traits reasonably inferable from HOW the resume describes the work (e.g. "calm under pressure", "detail-oriented") — distinct from skills, these are about working style, not tools or technical ability.
+3. suitable_roles: EXACTLY 3 job roles this resume would be a genuinely reasonable fit for. For each, give the role title and ONE sentence explaining why, tied to specific resume content. Never invent a role wildly disconnected from what's actually shown.
+4. growth_suggestion: ONE honest, specific suggestion — a skill or experience that would meaningfully broaden this person's options — maximum 25 words.
+
+Never give a numeric score or percentage. Respond ONLY with valid JSON, nothing else:
+{"skills": ["...", "..."], "traits": ["...", "..."], "suitable_roles": [{"title": "...", "reason": "..."}, ...], "growth_suggestion": "..."}"""
+
+
+def generate_general_assessment(resume_text: str) -> dict:
+    """
+    A genuinely different task from generate_snapshot() above — this one
+    takes NO role at all. Instead of "how relevant is this resume to a
+    specific job", it answers "given only this resume, what does it
+    actually show, and what roles would it reasonably fit." Tested live
+    against several resume shapes (thin, technical, non-traditional)
+    before being wired in here.
+    """
+    response = client.messages.create(
+        model=MODEL,
+        max_tokens=500,
+        system=GENERAL_ASSESSMENT_PROMPT,
+        messages=[{"role": "user", "content": f"RESUME:\n{resume_text}"}],
+    )
+    raw_text = response.content[0].text.strip()
+    cleaned_text = raw_text.replace("```json", "").replace("```", "").strip()
+    try:
+        return json.loads(cleaned_text)
+    except json.JSONDecodeError:
+        return {"error": "Could not parse response", "raw": raw_text}
+
+
 def run(role_description: str = DEFAULT_TEST_ROLE):
     print("=" * 78)
     print("OLD WAY vs NEW WAY — same 5 resumes, same role")

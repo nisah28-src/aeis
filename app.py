@@ -25,7 +25,7 @@ from dotenv import load_dotenv
 load_dotenv()  # reads .env in this same folder and loads ANTHROPIC_API_KEY
 
 from strip_pii import extract_text_from_pdf, strip_pii
-from candidate_snapshot import generate_snapshot, DEFAULT_TEST_ROLE
+from candidate_snapshot import generate_snapshot, generate_general_assessment, DEFAULT_TEST_ROLE
 
 # Placeholder until real job postings exist (Hariz's job-tabs feature) —
 # each job will eventually carry its own role_description from the
@@ -357,6 +357,57 @@ def api_evaluate():
             "relevance_label": snapshot["relevance_label"],
             "note": snapshot["note"],
             "suggested_question": snapshot["suggested_question"],
+        }), 200
+    except Exception as e:
+        return jsonify({"candidate_id": candidate_id, "error": f"AI call failed: {e}"}), 200
+
+
+@app.route("/api/assess-general", methods=["POST"])
+def api_assess_general():
+    """
+    Genuinely different from /api/evaluate above — no role_description
+    involved at all. Given only a resume, returns skills, traits, 3
+    suitable roles, and one growth suggestion. Same PII-stripping
+    discipline applies before anything reaches the AI.
+    """
+    file = request.files.get("resume")
+    if not file:
+        return jsonify({"error": "No resume file uploaded"}), 400
+
+    filename = secure_filename(file.filename)
+    save_path = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(save_path)
+
+    candidate_id = f"candidate_{uuid.uuid4().hex[:8]}"
+
+    try:
+        full_text = extract_text_from_pdf(save_path)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+
+    if not full_text.strip():
+        return jsonify({"error": "This PDF has no readable text (may be a scanned image)."}), 400
+
+    stripped_text = strip_pii(full_text)
+    candidate_records[candidate_id] = {"full_text": full_text, "stripped_text": stripped_text}
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return jsonify({
+            "candidate_id": candidate_id,
+            "error": "No ANTHROPIC_API_KEY set on the server — AI step skipped.",
+        }), 200
+
+    try:
+        assessment = generate_general_assessment(stripped_text)
+        if "error" in assessment:
+            return jsonify({"candidate_id": candidate_id, "error": "AI response could not be parsed."}), 200
+        candidate_records[candidate_id]["assessment"] = assessment
+        return jsonify({
+            "candidate_id": candidate_id,
+            "skills": assessment["skills"],
+            "traits": assessment["traits"],
+            "suitable_roles": assessment["suitable_roles"],
+            "growth_suggestion": assessment["growth_suggestion"],
         }), 200
     except Exception as e:
         return jsonify({"candidate_id": candidate_id, "error": f"AI call failed: {e}"}), 200

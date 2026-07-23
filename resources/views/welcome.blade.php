@@ -16,7 +16,8 @@
             <nav class="hidden items-center gap-6 text-sm text-slate-600 md:flex">
                 <a href="{{ route('jobs.index') }}" class="transition hover:text-violet-700">Browse jobs</a>
                 <a href="#how-it-works" class="transition hover:text-violet-700">How it works</a>
-                <a href="{{ route('jobs.create') }}" class="rounded-full bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700">Post a job</a>
+                <a href="{{ route('register') }}" class="rounded-full border border-violet-200 px-4 py-2 font-medium text-violet-700 transition hover:bg-violet-50">Join HireSense</a>
+                <a href="{{ route('jobs.create') }}" class="rounded-full bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700">Employer account</a>
             </nav>
         </div>
     </header>
@@ -35,11 +36,8 @@
                         HireSense helps hiring teams review resumes with context, structure, and clearer interview prompts — while keeping every decision human-led.
                     </p>
                     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                        <a href="{{ route('jobs.create') }}" class="rounded-full bg-white px-6 py-3 text-center font-semibold text-violet-700 transition hover:bg-violet-50">
-                            Post your first job
-                        </a>
-                        <a href="{{ route('jobs.index') }}" class="rounded-full border border-white/30 px-6 py-3 text-center font-semibold text-white transition hover:bg-white/10">
-                            Explore open roles
+                        <a href="{{ route('resume-check.show') }}" class="rounded-full border border-white/30 px-6 py-3 text-center font-semibold text-white transition hover:bg-white/10">
+                            Try resume check
                         </a>
                     </div>
                     <div class="mt-8 flex flex-wrap gap-4 text-sm text-violet-100/90">

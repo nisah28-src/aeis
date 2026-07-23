@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
@@ -68,46 +69,16 @@ $fakeCandidates = [
     ],
 ];
 
-/*
-|--------------------------------------------------------------------------
-| Roles available for the Resume Health Check — same 5 roles used
-| throughout this project, so the AI's reasoning is already proven
-| against each one.
-*/
-$resumeCheckRoles = [
-    'support' => [
-        'title' => 'Customer Support Executive',
-        'description' => 'Handles inbound customer complaints, resolves service issues, '
-            . 'escalates when needed, uses a CRM system, and requires clear '
-            . 'communication and calm problem-solving under pressure.',
-    ],
-    'swe' => [
-        'title' => 'Junior Software Engineer',
-        'description' => 'Builds and maintains web applications, works with databases, '
-            . 'collaborates with a team using Git, and applies foundational software '
-            . 'engineering and system design knowledge.',
-    ],
-    'sales' => [
-        'title' => 'Sales Executive',
-        'description' => 'Generates leads, negotiates deals, meets revenue targets, '
-            . 'builds client relationships, and requires strong persuasion and '
-            . 'communication skills.',
-    ],
-    'marketing' => [
-        'title' => 'Marketing Executive',
-        'description' => 'Plans and executes campaigns, manages social media and content, '
-            . 'analyzes engagement metrics, and requires creativity and audience understanding.',
-    ],
-    'warehouse' => [
-        'title' => 'Warehouse Operations Assistant',
-        'description' => 'Handles inventory, operates equipment like forklifts, ensures '
-            . 'safety compliance, and requires physical stamina and attention to detail.',
-    ],
-];
-
 Route::get('/', function () use ($fakeJobs) {
     return view('welcome', ['jobs' => $fakeJobs]);
 });
+
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 
 Route::get('/jobs', function (Request $request) use ($fakeJobs) {
     $search = trim((string) $request->query('search', ''));
@@ -207,34 +178,27 @@ Route::get('/candidates/{id}', function ($id) use ($fakeCandidates) {
 |--------------------------------------------------------------------------
 | RESUME HEALTH CHECK — candidate-facing, no job application required
 |--------------------------------------------------------------------------
-| Reuses the exact same /api/evaluate Flask endpoint as job applications.
-| No new AI logic here — only the display language changes, from
-| HR-facing ("this candidate...") to candidate-facing ("your resume...").
+| Calls /api/assess-general on the Flask side — a genuinely different
+| endpoint from job applications, since no target role is involved.
+| Returns skills, traits, 3 suitable roles, and one growth suggestion.
 */
 Route::get('/resume-check', function () {
     return view('resume-check.show');
 })->name('resume-check.show');
 
-Route::post('/resume-check', function (Request $request) use ($resumeCheckRoles) {
+Route::post('/resume-check', function (Request $request) {
     set_time_limit(45);
 
     $request->validate([
-        'target_role' => 'required|string',
         'resume' => 'required|file|mimes:pdf|max:5120',
     ]);
-
-    $roleKey = $request->input('target_role');
-    abort_if(!isset($resumeCheckRoles[$roleKey]), 400);
-    $role = $resumeCheckRoles[$roleKey];
 
     $file = $request->file('resume');
 
     try {
         $response = Http::connectTimeout(10)->timeout(40)
             ->attach('resume', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-            ->post('http://127.0.0.1:5050/api/evaluate', [
-                'role_description' => $role['description'],
-            ]);
+            ->post('http://127.0.0.1:5050/api/assess-general');
     } catch (\Illuminate\Http\Client\ConnectionException $e) {
         return back()->withErrors([
             'resume' => 'Could not reach the AI service. Is the Flask app running on port 5050?',
@@ -246,7 +210,6 @@ Route::post('/resume-check', function (Request $request) use ($resumeCheckRoles)
     }
 
     return view('resume-check.result', [
-        'target_role_title' => $role['title'],
         'result' => $response->json(),
     ]);
 })->name('resume-check.submit');

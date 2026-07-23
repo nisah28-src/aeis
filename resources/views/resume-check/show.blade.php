@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Health Check — HireSense</title>
+    <title>Resume Check — HireSense</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-neutral-50 text-neutral-900">
@@ -20,24 +20,15 @@
     <section class="max-w-2xl mx-auto px-6 py-14">
 
         <div class="mb-1 text-xs font-semibold text-teal-700 uppercase tracking-wide">Free — no application required</div>
-        <h1 class="text-2xl font-bold mb-1">Resume Health Check</h1>
+        <h1 class="text-2xl font-bold mb-1">Resume   Check</h1>
         <p class="text-sm text-neutral-500 mb-8">
-            Upload your resume and see how it reads against a role you're aiming for —
-            an honest note, not a bare score.
+            Upload your resume — see the skills and traits it actually shows,
+            what roles genuinely fit, and one honest suggestion to grow.
         </p>
 
         <form method="POST" action="{{ route('resume-check.submit') }}" enctype="multipart/form-data"
               class="bg-white border border-neutral-200 rounded-xl p-8">
             @csrf
-
-            <label class="block text-sm font-medium mb-1">What kind of role are you aiming for?</label>
-            <select name="target_role" required class="w-full border border-neutral-300 rounded-lg px-3 py-2 mb-5">
-                <option value="support">Customer Support Executive</option>
-                <option value="swe">Junior Software Engineer</option>
-                <option value="sales">Sales Executive</option>
-                <option value="marketing">Marketing Executive</option>
-                <option value="warehouse">Warehouse Operations Assistant</option>
-            </select>
 
             <label class="block text-sm font-medium mb-1">Your resume (PDF)</label>
             <input type="file" name="resume" accept="application/pdf" required
