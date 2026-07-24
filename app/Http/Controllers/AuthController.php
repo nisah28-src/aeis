@@ -76,9 +76,41 @@ class AuthController extends Controller
             return redirect()->route('login');
         }
 
+        $role = $user->role ?? 'candidate';
+
+        $employerStats = [
+            'jobsPosted' => 4,
+            'applications' => 18,
+            'jobs' => [
+                ['title' => 'Junior Software Engineer', 'status' => 'Live'],
+                ['title' => 'Customer Support Executive', 'status' => 'Reviewing'],
+                ['title' => 'Product Designer', 'status' => 'Draft'],
+            ],
+            'applicants' => [
+                ['name' => 'Aisyah Rahman', 'job' => 'Customer Support Executive', 'status' => 'New'],
+                ['name' => 'Hafiz Idris', 'job' => 'Junior Software Engineer', 'status' => 'Shortlisted'],
+                ['name' => 'Nadiah Lim', 'job' => 'Product Designer', 'status' => 'Interview'],
+            ],
+        ];
+
+        $candidateStats = [
+            'appliedJobs' => 3,
+            'savedJobs' => 5,
+            'applied' => [
+                ['title' => 'Junior Software Engineer', 'status' => 'Applied'],
+                ['title' => 'Product Designer', 'status' => 'Interview'],
+            ],
+            'saved' => [
+                ['title' => 'Operations Coordinator', 'company' => 'Northstar Labs'],
+                ['title' => 'Marketing Analyst', 'company' => 'BrightPath'],
+            ],
+        ];
+
         return view('dashboard', [
             'user' => $user,
-            'role' => $user->role,
+            'role' => $role,
+            'employerStats' => $employerStats,
+            'candidateStats' => $candidateStats,
         ]);
     }
 }
