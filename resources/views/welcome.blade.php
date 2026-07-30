@@ -16,8 +16,8 @@
             <nav class="hidden items-center gap-6 text-sm text-slate-600 md:flex">
                 <a href="{{ route('jobs.index') }}" class="transition hover:text-violet-700">Browse jobs</a>
                 <a href="#how-it-works" class="transition hover:text-violet-700">How it works</a>
+                <a href="{{ route('login') }}" class="transition hover:text-violet-700">Log in</a>
                 <a href="{{ route('register') }}" class="rounded-full border border-violet-200 px-4 py-2 font-medium text-violet-700 transition hover:bg-violet-50">Join HireSense</a>
-                <a href="{{ route('jobs.create') }}" class="rounded-full bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700">Employer account</a>
             </nav>
         </div>
     </header> 
