@@ -32,7 +32,7 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        return redirect()->route('dashboard');
+        return redirect('/');
     }
 
     public function showLogin()
@@ -50,7 +50,9 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard'));
+            // "/" itself now decides what to show by role (see HomeController) —
+            // employers get Flask's dashboard relayed server-side from here.
+            return redirect()->intended('/');
         }
 
         return back()->withErrors([
@@ -65,7 +67,11 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // Flask has no logout endpoint of its own — without this, an employer
+        // could log out of Laravel and still have an authenticated Flask
+        // session ("session" cookie) sitting in their browser. path=/ and no
+        // domain match exactly what Flask itself sets, so this clears it.
+        return redirect('/')->withoutCookie('session');
     }
 
     public function dashboard()
@@ -73,7 +79,10 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if (!$user) {
-            return redirect()->route('login');
+            $user = (object) [
+                'name' => 'Guest Visitor',
+                'role' => 'candidate',
+            ];
         }
 
         $role = $user->role ?? 'candidate';

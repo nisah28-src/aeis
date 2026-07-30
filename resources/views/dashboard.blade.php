@@ -4,19 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard • HireSense</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900">
-    <div class="mx-auto max-w-7xl px-6 py-12">
-        <div class="flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
+    <div class="mx-auto max-w-7xl px-6 py-8 lg:px-8 lg:py-10">
+        <div class="flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm md:flex-row md:items-center md:justify-between">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-violet-600">Welcome back</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.3em] text-violet-600">Welcome back</p>
                 <h1 class="mt-2 text-3xl font-semibold">{{ ucfirst($role) }} Dashboard</h1>
-                <p class="mt-2 text-sm text-slate-600">Hello, {{ $user->name }}. This is your starter workspace.</p>
+                <p class="mt-2 text-sm text-slate-600">Hello, {{ $user->name }}. This is your hiring workspace.</p>
             </div>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Log out</button>
+                <button type="submit" class="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100">Log out</button>
             </form>
         </div>
 
@@ -81,6 +81,29 @@
                 </div>
             </div>
         @else
+            <div class="mt-8 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+                <div class="rounded-[2rem] border border-violet-100 bg-gradient-to-br from-violet-600 via-violet-700 to-slate-900 p-6 text-white shadow-sm">
+                    <p class="text-sm font-semibold uppercase tracking-[0.3em] text-violet-100">Candidate workspace</p>
+                    <h2 class="mt-3 text-2xl font-semibold">You’re one step closer to your next role.</h2>
+                    <p class="mt-3 max-w-2xl text-sm leading-7 text-violet-50/90">
+                        Keep your applications organised, revisit saved roles, and use the resume check flow to sharpen your next move.
+                    </p>
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <a href="{{ route('jobs.index') }}" class="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-100">Browse jobs</a>
+                        <a href="{{ route('resume-check.show') }}" class="rounded-full border border-white/30 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/10">Try resume check</a>
+                    </div>
+                </div>
+
+                <div class="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
+                    <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Profile snapshot</p>
+                    <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-sm text-slate-600">Profile strength</p>
+                        <p class="mt-2 text-3xl font-semibold text-slate-900">Strong</p>
+                        <p class="mt-2 text-sm text-slate-600">You are matching well with the latest opportunities in the pipeline.</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-8 grid gap-6 lg:grid-cols-3">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <p class="text-sm font-semibold text-slate-500">Jobs applied</p>
@@ -91,14 +114,17 @@
                     <p class="mt-3 text-3xl font-semibold text-slate-900">{{ $candidateStats['savedJobs'] }}</p>
                 </div>
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-semibold text-slate-500">Profile strength</p>
-                    <p class="mt-3 text-3xl font-semibold text-slate-900">Strong</p>
+                    <p class="text-sm font-semibold text-slate-500">Resume check</p>
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">Ready</p>
                 </div>
             </div>
 
             <div class="mt-8 grid gap-6 lg:grid-cols-2">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-xl font-semibold">Recent applications</h2>
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-xl font-semibold">Recent applications</h2>
+                        <span class="rounded-full bg-violet-50 px-3 py-1 text-xs font-semibold text-violet-700">Updated today</span>
+                    </div>
                     <div class="mt-5 space-y-3">
                         @foreach($candidateStats['applied'] as $application)
                             <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">

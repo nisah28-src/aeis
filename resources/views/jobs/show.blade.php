@@ -29,8 +29,26 @@
             </p>
         </div>
 
+        {{-- ============ CANDIDATE ACTIONS ============ --}}
+        <div class="bg-white border border-neutral-200 rounded-xl p-8 mb-6">
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="#apply-form" class="inline-flex items-center rounded-full bg-violet-700 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-800">
+                    Apply now
+                </a>
+                <button type="button" class="inline-flex items-center rounded-full border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-violet-600 hover:text-violet-700">
+                    Save for later
+                </button>
+                <a href="{{ route('dashboard') }}" class="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-semibold text-violet-700 hover:bg-violet-100">
+                    Track application
+                </a>
+            </div>
+            <div class="mt-4 rounded-2xl border border-violet-100 bg-violet-50 p-4 text-sm text-violet-800">
+                Keep your next step organised: apply, save standout roles, and follow progress from one candidate workspace.
+            </div>
+        </div>
+
         {{-- ============ APPLY FORM ============ --}}
-        <div class="bg-white border border-neutral-200 rounded-xl p-8">
+        <div id="apply-form" class="bg-white border border-neutral-200 rounded-xl p-8">
             <h2 class="text-lg font-semibold mb-1">Apply for this role</h2>
             <p class="text-sm text-neutral-500 mb-6">
                 Your name, IC, phone, and email are stripped before anything reaches the AI —

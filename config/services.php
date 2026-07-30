@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'flask' => [
+        'base_url' => env('FLASK_BASE_URL', 'https://ai-resume-screener-backend-x8dk.onrender.com'),
+    ],
+
 ];

@@ -12,7 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Flask's own session cookie ("session") must pass through unencrypted —
+        // Flask needs to read back exactly the value it wrote. No collision with
+        // Laravel's own session cookie, which is named "laravel-session" here.
+        $middleware->encryptCookies(except: ['session']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

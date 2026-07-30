@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', 'HireSense') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    @vite(['resources/css/app.css'])
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-900">
     <header class="sticky top-0 z-20 border-b border-slate-200/70 bg-white/80 backdrop-blur">
@@ -20,7 +20,7 @@
                 <a href="{{ route('jobs.create') }}" class="rounded-full bg-slate-900 px-4 py-2 font-medium text-white transition hover:bg-slate-700">Employer account</a>
             </nav>
         </div>
-    </header>
+    </header> 
 
     <main>
         <section class="overflow-hidden bg-gradient-to-br from-violet-600 via-violet-700 to-slate-950 text-white">
@@ -78,55 +78,9 @@
         <section class="border-y border-slate-200 bg-white">
             <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-6 px-6 py-6 lg:px-8">
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Trusted by modern hiring teams</p>
-                <div class="flex flex-wrap gap-4 text-sm font-medium text-slate-600">
-                    <span class="rounded-full bg-slate-100 px-3 py-2">Northstar Labs</span>
-                    <span class="rounded-full bg-slate-100 px-3 py-2">BrightPath</span>
-                    <span class="rounded-full bg-slate-100 px-3 py-2">Lumen Works</span>
-                    <span class="rounded-full bg-slate-100 px-3 py-2">Apex Studio</span>
-                </div>
-            </div>
         </section>
 
-        <section id="open-roles" class="mx-auto max-w-7xl px-6 py-20 lg:px-8">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.2em] text-violet-600">Featured roles</p>
-                    <h2 class="mt-2 text-3xl font-semibold text-slate-900">Open positions worth a closer look</h2>
-                </div>
-                <a href="{{ route('jobs.index') }}" class="text-sm font-semibold text-violet-700 hover:underline">See all roles</a>
-            </div>
-
-            @if(!empty($jobs))
-                <div class="mt-10 grid gap-6 lg:grid-cols-2">
-                    @foreach($jobs as $id => $job)
-                        <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
-                                    <p class="text-sm font-semibold text-violet-600">{{ $job['department'] }}</p>
-                                    <h3 class="mt-1 text-xl font-semibold text-slate-900">{{ $job['title'] }}</h3>
-                                </div>
-                                <span class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-medium text-emerald-700">New</span>
-                            </div>
-                            <p class="mt-4 text-sm leading-6 text-slate-600">{{ $job['description'] }}</p>
-                            <div class="mt-5 flex flex-wrap gap-2 text-sm">
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Full-time</span>
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Remote friendly</span>
-                                <span class="rounded-full bg-slate-100 px-3 py-1 text-slate-600">Hybrid support</span>
-                            </div>
-                            <div class="mt-6 flex items-center justify-between">
-                                <p class="text-sm text-slate-500">Posted recently</p>
-                                <a href="{{ route('jobs.show', $id) }}" class="font-semibold text-violet-700 hover:underline">View role →</a>
-                            </div>
-                        </article>
-                    @endforeach
-                </div>
-            @else
-                <div class="mt-10 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-slate-600">
-                    No roles are available right now. Check back soon.
-                </div>
-            @endif
-        </section>
-
+      
         <section id="how-it-works" class="bg-slate-50 py-20">
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl text-center">

@@ -1,59 +1,13 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FlaskProxyController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\JobController;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
-
-/*
-|--------------------------------------------------------------------------
-| Temporary static job data
-|--------------------------------------------------------------------------
-| Stand-in for a real Jobs database table. Replace with Job::find($id)
-| once that table exists.
-*/
-$fakeJobs = [
-    1 => [
-        'title' => 'Junior Software Engineer',
-        'company' => 'HireSense (internal)',
-        'department' => 'Engineering',
-        'type' => 'Full-time',
-        'mode' => 'Hybrid',
-        'posted_at' => now()->subDays(8)->toDateString(),
-        'description' => 'Builds and maintains web applications, works with databases, '
-            . 'collaborates with a team using Git, and applies foundational software '
-            . 'engineering and system design knowledge.',
-    ],
-    2 => [
-        'title' => 'Customer Support Executive',
-        'company' => 'HireSense (internal)',
-        'department' => 'Customer Support',
-        'type' => 'Part-time',
-        'mode' => 'Remote',
-        'posted_at' => now()->subDays(42)->toDateString(),
-        'description' => 'Handles inbound customer complaints, resolves service issues, '
-            . 'escalates when needed, uses a CRM system, and requires clear '
-            . 'communication and calm problem-solving under pressure.',
-    ],
-    3 => [
-        'title' => 'Product Designer',
-        'company' => 'HireSense (internal)',
-        'department' => 'Design',
-        'type' => 'Full-time',
-        'mode' => 'Remote',
-        'posted_at' => now()->subDays(2)->toDateString(),
-        'description' => 'Shapes polished product experiences, contributes to design systems, and works closely with product and engineering teams to deliver thoughtful user journeys.',
-    ],
-    4 => [
-        'title' => 'Operations Coordinator',
-        'company' => 'HireSense (internal)',
-        'department' => 'Operations',
-        'type' => 'Part-time',
-        'mode' => 'Hybrid',
-        'posted_at' => now()->subDays(95)->toDateString(),
-        'description' => 'Keeps delivery moving across people and process, coordinates schedules, tracks progress, and supports the team with clear follow-through and planning.',
-    ],
-];
 
 $fakeCandidates = [
     1 => [
@@ -69,100 +23,39 @@ $fakeCandidates = [
     ],
 ];
 
-Route::get('/', function () use ($fakeJobs) {
-    return view('welcome', ['jobs' => $fakeJobs]);
-});
+Route::get('/', [HomeController::class, 'index']);
 
 Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
 Route::post('/register', [AuthController::class, 'register']);
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+
+// Same handler, reachable from inside Flask's own dashboard HTML — that page
+// has no Laravel CSRF token available to it (it's Flask's markup, not a Blade
+// view), so this alias is exempted from CSRF specifically for that reason.
+Route::post('/auth/logout', [AuthController::class, 'logout'])
+    ->withoutMiddleware(PreventRequestForgery::class);
 Route::get('/dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
 
-Route::get('/jobs', function (Request $request) use ($fakeJobs) {
-    $search = trim((string) $request->query('search', ''));
-    $type = trim((string) $request->query('type', ''));
-    $mode = trim((string) $request->query('mode', ''));
-
-    $filteredJobs = [];
-
-    foreach ($fakeJobs as $id => $job) {
-        $jobText = strtolower($job['title'] . ' ' . $job['department'] . ' ' . $job['description']);
-        $matchesSearch = $search === '' || str_contains($jobText, strtolower($search));
-        $matchesType = $type === '' || strtolower($job['type']) === strtolower($type);
-        $matchesMode = $mode === '' || strtolower($job['mode']) === strtolower($mode);
-
-        if ($matchesSearch && $matchesType && $matchesMode) {
-            $filteredJobs[$id] = $job;
-        }
-    }
-
-    return view('jobs.index', [
-        'jobs' => $filteredJobs,
-        'search' => $search,
-        'type' => $type,
-        'mode' => $mode,
-    ]);
-})->name('jobs.index');
+Route::get('/jobs', [JobController::class, 'index'])->name('jobs.index');
 
 Route::get('/jobs/create', function () {
     return view('jobs.create');
 })->name('jobs.create');
 
-Route::get('/jobs/{id}', function ($id) use ($fakeJobs) {
-    abort_if(!isset($fakeJobs[$id]), 404);
-    return view('jobs.show', ['job' => $fakeJobs[$id], 'jobId' => $id]);
-})->name('jobs.show');
+Route::get('/jobs/{id}', [JobController::class, 'show'])->name('jobs.show');
 
 /*
 |--------------------------------------------------------------------------
-| THE REAL BRIDGE — this is the new part
+| THE REAL BRIDGE
 |--------------------------------------------------------------------------
 | Receives the application form submission, forwards the resume file to
 | the Python Flask AI backend over HTTP (server-to-server, no CORS
 | involved since the browser never talks to Flask directly), and shows
 | whatever the AI actually returns.
 */
-Route::post('/jobs/{id}/apply', function (Request $request, $id) use ($fakeJobs) {
-    abort_if(!isset($fakeJobs[$id]), 404);
-    $job = $fakeJobs[$id];
-
-    // PHP's own execution timer defaults to 30s and would otherwise kill
-    // this request with a raw fatal error BEFORE our own Http::timeout()
-    // below ever gets a chance to fail gracefully. Extend it here so our
-    // own timeout logic is what actually handles a slow response.
-    set_time_limit(45);
-
-    $request->validate([
-        'name' => 'required|string',
-        'email' => 'required|email',
-        'resume' => 'required|file|mimes:pdf|max:5120',
-    ]);
-
-    $file = $request->file('resume');
-
-    try {
-        $response = Http::connectTimeout(10)->timeout(40)
-            ->attach('resume', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-            ->post('http://127.0.0.1:5050/api/evaluate', [
-                'role_description' => $job['description'],
-            ]);
-    } catch (\Illuminate\Http\Client\ConnectionException $e) {
-        return back()->withErrors([
-            'resume' => 'Could not reach the AI service. Is the Flask app running on port 5050?',
-        ]);
-    }
-
-    if ($response->failed()) {
-        return back()->withErrors(['resume' => 'The AI service returned an error. Please try again.']);
-    }
-
-    return view('jobs.applied', [
-        'job' => $job,
-        'result' => $response->json(),
-    ]);
-})->name('jobs.apply');
+Route::post('/jobs/{id}/apply', [JobController::class, 'apply'])->name('jobs.apply');
 
 Route::get('/candidates/{id}', function ($id) use ($fakeCandidates) {
     abort_if(!isset($fakeCandidates[$id]), 404);
@@ -213,3 +106,23 @@ Route::post('/resume-check', function (Request $request) {
         'result' => $response->json(),
     ]);
 })->name('resume-check.submit');
+
+
+/*
+|--------------------------------------------------------------------------
+| FLASK HR SIDE — single-URL merge
+|--------------------------------------------------------------------------
+| Must be the LAST route registered — matches anything nothing else claimed
+| (/jobs-app assets, /candidates API, /portal/<token>, /auth/*, etc.) and
+| forwards it to Flask byte-for-byte. CSRF is exempted here specifically:
+| the React SPA served through this proxy has no way to obtain Laravel's
+| token, so its own POST/PATCH/DELETE calls would otherwise 419.
+|
+| NOT Route::fallback() — that only ever registers for GET, so every write
+| Flask needs (POST /upload, /screen-all, PATCH /candidate/{id}/status,
+| DELETE /candidate/{id}) would 405 at Laravel's own router before ever
+| reaching this controller. Route::any() matches every verb.
+*/
+Route::any('{any}', [FlaskProxyController::class, 'proxy'])
+    ->where('any', '.*')
+    ->withoutMiddleware(PreventRequestForgery::class);

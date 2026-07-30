@@ -1,0 +1,24 @@
+FROM php:8.3-cli
+
+# mbstring: hard-required by laravel/framework's own composer.json — without
+# it, `composer install` can fail its platform check before the app even runs.
+# curl: Guzzle (and therefore Laravel's Http facade) prefers it over its
+# stream-based fallback — this app's entire Flask integration goes through it.
+# fileinfo: what Laravel's `mimes:pdf` validation rule uses to sniff the real
+# file content type — every resume upload route validates against it.
+RUN apt-get update && apt-get install -y \
+    git unzip libpq-dev libzip-dev libcurl4-openssl-dev libonig-dev \
+    && docker-php-ext-install pdo pdo_pgsql zip mbstring curl fileinfo \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
+COPY . .
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction
+
+RUN php artisan config:clear
+
+EXPOSE 10000
+CMD php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=${PORT:-10000}

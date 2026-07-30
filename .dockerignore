@@ -1,0 +1,17 @@
+.env
+.env.*
+.git
+.github
+node_modules
+vendor
+storage/logs
+storage/framework/cache
+storage/framework/sessions
+storage/framework/views
+storage/*.key
+public/hot
+public/storage
+.phpunit.cache
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
