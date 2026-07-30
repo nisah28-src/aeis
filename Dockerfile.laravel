@@ -1,3 +1,12 @@
+# Blade views (welcome, login, dashboard) use @vite() — that needs a real
+# compiled public/build/manifest.json, which is gitignored and never
+# committed. Build it here in a throwaway Node stage, then copy just the
+# output into the final PHP image (no Node/node_modules in production).
+FROM node:20 AS frontend
+WORKDIR /app
+COPY . .
+RUN npm ci && npm run build
+
 FROM php:8.4-cli
 
 # mbstring: hard-required by laravel/framework's own composer.json — without
@@ -15,6 +24,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 COPY . .
+COPY --from=frontend /app/public/build ./public/build
 
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
