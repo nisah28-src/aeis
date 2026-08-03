@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 class HomeController extends Controller
 {
@@ -42,16 +44,39 @@ class HomeController extends Controller
             'used'        => 0,
         ]);
 
-        $handoffResponse = Http::withOptions(['allow_redirects' => false])
-            ->get($flaskBaseUrl . '/auth/handoff', ['token' => $token]);
+        try {
+            $handoffResponse = Http::withOptions(['allow_redirects' => false])
+                ->timeout(15)
+                ->connectTimeout(10)
+                ->get($flaskBaseUrl . '/auth/handoff', ['token' => $token]);
+        } catch (Throwable $e) {
+            // Flask lives on its own Render service and spins down after
+            // idling — the first request after that can hang well past a
+            // normal timeout. Without this, that exception used to bubble up
+            // uncaught and render as a blank page (APP_DEBUG=false in prod).
+            Log::warning('Flask handoff request failed', ['error' => $e->getMessage()]);
+
+            return $this->dashboardUnavailable();
+        }
 
         $flaskCookieHeader = $handoffResponse->header('Set-Cookie');
         if (!$flaskCookieHeader) {
-            abort(502, 'Could not establish an employer dashboard session with Flask.');
+            Log::warning('Flask handoff returned no session cookie', ['status' => $handoffResponse->status()]);
+
+            return $this->dashboardUnavailable();
         }
         $flaskCookiePair = explode(';', $flaskCookieHeader)[0]; // "session=eyJ..."
 
-        $dashboardResponse = Http::withHeaders(['Cookie' => $flaskCookiePair])->get($flaskBaseUrl . '/');
+        try {
+            $dashboardResponse = Http::withHeaders(['Cookie' => $flaskCookiePair])
+                ->timeout(15)
+                ->connectTimeout(10)
+                ->get($flaskBaseUrl . '/');
+        } catch (Throwable $e) {
+            Log::warning('Flask dashboard fetch failed', ['error' => $e->getMessage()]);
+
+            return $this->dashboardUnavailable();
+        }
 
         // Set-Cookie is relayed VERBATIM (not via Laravel's cookie()/Cookie::queue()
         // helpers) so Laravel's own cookie encryption never touches Flask's session
@@ -59,5 +84,10 @@ class HomeController extends Controller
         return response($dashboardResponse->body(), $dashboardResponse->status())
             ->header('Content-Type', $dashboardResponse->header('Content-Type'))
             ->header('Set-Cookie', $flaskCookieHeader);
+    }
+
+    private function dashboardUnavailable()
+    {
+        return response()->view('errors.flask-unavailable', [], 503);
     }
 }
