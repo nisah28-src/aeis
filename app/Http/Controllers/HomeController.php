@@ -81,57 +81,13 @@ class HomeController extends Controller
         // Set-Cookie is relayed VERBATIM (not via Laravel's cookie()/Cookie::queue()
         // helpers) so Laravel's own cookie encryption never touches Flask's session
         // value — Flask needs to read back exactly what it wrote.
-        $contentType = (string) $dashboardResponse->header('Content-Type');
-        $body = str_contains(strtolower($contentType), 'text/html')
-            ? $this->withLogoutWatcher($dashboardResponse->body())
-            : $dashboardResponse->body();
-
-        return response($body, $dashboardResponse->status())
-            ->header('Content-Type', $contentType)
+        return response($dashboardResponse->body(), $dashboardResponse->status())
+            ->header('Content-Type', $dashboardResponse->header('Content-Type'))
             ->header('Set-Cookie', $flaskCookieHeader);
     }
 
     private function dashboardUnavailable()
     {
         return response()->view('errors.flask-unavailable', [], 503);
-    }
-
-    /**
-     * The employer dashboard's own logout button calls POST /auth/logout via
-     * the SPA's JS, which silently swallows Laravel's redirect response —
-     * the session/cookie do get destroyed, but nothing tells the browser to
-     * navigate anywhere, leaving the SPA stuck showing a logged-out shell on
-     * the same URL. We don't own that SPA's source, so as a stopgap this
-     * polls Flask's own /auth/me (via our proxy) and forces the browser back
-     * to "/" the moment it reports 401. If /auth/me doesn't exist or never
-     * returns 401, this simply never fires — it can't falsely log someone
-     * out mid-session.
-     */
-    private function withLogoutWatcher(string $html): string
-    {
-        $script = <<<'HTML'
-<script>
-(function () {
-    var redirected = false;
-    setInterval(function () {
-        if (redirected) return;
-        fetch('/auth/me', { credentials: 'same-origin' })
-            .then(function (res) {
-                if (res.status === 401) {
-                    redirected = true;
-                    window.location.href = '/';
-                }
-            })
-            .catch(function () { /* transient network error, ignore */ });
-    }, 3000);
-})();
-</script>
-HTML;
-
-        if (stripos($html, '</body>') !== false) {
-            return preg_replace('/<\/body>/i', $script . '</body>', $html, 1);
-        }
-
-        return $html . $script;
     }
 }
