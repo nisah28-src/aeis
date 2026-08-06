@@ -111,7 +111,10 @@
     <footer class="border-t border-slate-200 bg-white py-8">
         <div class="mx-auto flex max-w-7xl flex-col gap-2 px-6 text-sm text-slate-500 lg:flex-row lg:items-center lg:justify-between lg:px-8">
             <p>&copy; {{ date('Y') }} HireSense. Built for focused, modern hiring.</p>
-            <a href="{{ route('jobs.create') }}" class="font-semibold text-violet-700 hover:underline">Start hiring today</a>
+            <div class="flex items-center gap-4">
+                <a href="{{ route('pdpa') }}" class="hover:underline">Privacy Notice (PDPA)</a>
+                <a href="{{ route('jobs.create') }}" class="font-semibold text-violet-700 hover:underline">Start hiring today</a>
+            </div>
         </div>
     </footer>
 </body>

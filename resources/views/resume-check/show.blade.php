@@ -45,6 +45,7 @@
 
         <p class="text-xs text-neutral-400 mt-4 text-center">
             Name, IC, phone, and email are removed before anything reaches the AI.
+            See our <a href="{{ route('pdpa') }}" class="underline hover:text-violet-700">Privacy Notice (PDPA)</a>.
         </p>
 
     </section>

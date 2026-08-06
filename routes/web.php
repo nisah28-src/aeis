@@ -79,6 +79,10 @@ Route::get('/resume-check', function () {
     return view('resume-check.show');
 })->name('resume-check.show');
 
+Route::get('/pdpa', function () {
+    return view('pdpa');
+})->name('pdpa');
+
 Route::post('/resume-check', function (Request $request) {
     set_time_limit(45);
 
