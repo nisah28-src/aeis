@@ -68,6 +68,23 @@
                 <label class="block text-sm font-medium mb-1">Resume (PDF)</label>
                 <input type="file" name="resume" accept="application/pdf" required class="w-full border border-neutral-300 rounded-lg px-3 py-2 mb-6">
 
+                <div class="flex items-start gap-3 mb-6">
+                    <input id="consent" name="consent" type="checkbox" required value="1" @checked($alreadyConsented ?? false)
+                           class="mt-1 h-4 w-4 rounded border-neutral-300 text-violet-600 focus:ring-violet-500">
+                    @if($alreadyConsented ?? false)
+                        <label for="consent" class="text-sm text-neutral-600">
+                            You've already agreed to our <a href="{{ route('pdpa') }}" target="_blank" class="underline hover:text-violet-700">Privacy Notice (PDPA)</a> on this device — thanks. Uncheck to review it again.
+                        </label>
+                    @else
+                        <label for="consent" class="text-sm text-neutral-600">
+                            I have read and agree to the <a href="{{ route('pdpa') }}" target="_blank" class="underline hover:text-violet-700">Privacy Notice (PDPA)</a>, and consent to the collection and processing of my personal data for this application.
+                        </label>
+                    @endif
+                </div>
+                @error('consent')
+                    <p class="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-3">{{ $message }}</p>
+                @enderror
+
                 <button type="submit" class="bg-violet-700 text-white px-6 py-3 rounded-lg font-medium hover:bg-violet-800">
                     Submit application
                 </button>

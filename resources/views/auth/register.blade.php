@@ -42,6 +42,18 @@
                         <option value="candidate">Candidate</option>
                     </select>
                 </div>
+                <div class="flex items-start gap-3">
+                    <input id="consent" name="consent" type="checkbox" required value="1"
+                           class="mt-1 h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                    <label for="consent" class="text-sm text-slate-600">
+                        I have read and agree to the
+                        <a href="{{ route('pdpa') }}" target="_blank" class="font-semibold text-violet-700 hover:underline">Privacy Notice (PDPA)</a>,
+                        and consent to the collection and processing of my personal data for the purposes stated there.
+                    </label>
+                </div>
+                @error('consent')
+                    <p class="text-sm text-red-700">{{ $message }}</p>
+                @enderror
                 <button type="submit" class="w-full rounded-xl bg-violet-600 px-4 py-3 font-semibold text-white transition hover:bg-violet-700">Create account</button>
             </form>
 

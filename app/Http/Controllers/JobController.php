@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Consent;
 use App\Models\Job;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+
+// Browser-remembered consent, checked against the version below so a
+// re-visit after the notice changes doesn't silently skip re-consent.
+const PDPA_CONSENT_COOKIE = 'pdpa_consent_v';
 
 class JobController extends Controller
 {
@@ -46,7 +52,7 @@ class JobController extends Controller
         ]);
     }
 
-    public function show(string $id)
+    public function show(string $id, Request $request)
     {
         $job = Job::find($id);
 
@@ -55,6 +61,7 @@ class JobController extends Controller
         return view('jobs.show', [
             'job' => $this->toJobArray($job),
             'jobId' => $job->id,
+            'alreadyConsented' => $request->cookie(PDPA_CONSENT_COOKIE) === Consent::CURRENT_VERSION,
         ]);
     }
 
@@ -70,7 +77,16 @@ class JobController extends Controller
             'name' => 'required|string',
             'email' => 'required|email',
             'resume' => 'required|file|mimes:pdf|max:5120',
+            'consent' => 'required|accepted',
         ]);
+
+        Consent::create([
+            'email' => $request->input('email'),
+            'job_id' => $job->id,
+            'notice_version' => Consent::CURRENT_VERSION,
+        ]);
+
+        Cookie::queue(PDPA_CONSENT_COOKIE, Consent::CURRENT_VERSION, 60 * 24 * 365);
 
         $file = $request->file('resume');
         $fileContents = file_get_contents($file->getRealPath());

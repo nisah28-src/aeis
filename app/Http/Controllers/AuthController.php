@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Consent;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,7 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', 'min:8'],
             'role' => ['required', 'in:employer,candidate'],
+            'consent' => ['required', 'accepted'],
         ]);
 
         $user = User::create([
@@ -29,6 +31,10 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'role' => $request->role,
         ]);
+
+        $user->pdpa_consent_version = Consent::CURRENT_VERSION;
+        $user->pdpa_consented_at = now();
+        $user->save();
 
         Auth::login($user);
 
